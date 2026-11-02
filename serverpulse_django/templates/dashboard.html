@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  Dashboard – ServerPulse Health Monitor (Django)
+{% endblock %}
+
+{% block page_title %}
+  Infrastructure Health Overview
+{% endblock %}
+
+{% block content %}
+  <!-- University Demo Interactive Helper Banner -->
+  <div class="demo-banner">
+    <div class="demo-banner-content">
+      <span class="demo-badge">Presentation Mode</span>
+      <span style="font-size: 0.88rem; color: var(--text-secondary);">
+        Real-time hardware monitoring active on local machine with <code>psutil</code> &amp; Django. Use quick actions to demonstrate alerts:
+      </span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-warning btn-sm" onclick="triggerDemoSpike()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+        Simulate CPU/RAM Spike
+      </button>
+      <a href="{% url 'servers' %}" class="btn btn-secondary btn-sm">Manage Cluster</a>
+    </div>
+  </div>
+
+  <!-- 6 KPI Metric Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-info">
+        <span class="kpi-label">Total Servers</span>
+        <span class="kpi-value" id="kpiTotalServers">--</span>
+      </div>
+      <div class="kpi-icon-wrap blue">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-info">
+        <span class="kpi-label">Online Servers</span>
+        <span class="kpi-value" id="kpiOnlineServers" style="color: var(--accent-green);">--</span>
+      </div>
+      <div class="kpi-icon-wrap green">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-info">
+        <span class="kpi-label">Offline Servers</span>
+        <span class="kpi-value" id="kpiOfflineServers" style="color: var(--accent-red);">--</span>
+      </div>
+      <div class="kpi-icon-wrap red">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-info">
+        <span class="kpi-label">Average CPU Usage</span>
+        <span class="kpi-value" id="kpiAvgCpu">--%</span>
+      </div>
+      <div class="kpi-icon-wrap purple">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-info">
+        <span class="kpi-label">Average RAM Usage</span>
+        <span class="kpi-value" id="kpiAvgRam">--%</span>
+      </div>
+      <div class="kpi-icon-wrap amber">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 19v-3"></path><path d="M10 19v-3"></path><path d="M14 19v-3"></path><path d="M18 19v-3"></path><path d="M6 8V5"></path><path d="M10 8V5"></path><path d="M14 8V5"></path><path d="M18 8V5"></path><rect x="2" y="8" width="20" height="8" rx="1"></rect></svg>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-info">
+        <span class="kpi-label">Active Alerts</span>
+        <span class="kpi-value" id="kpiActiveAlerts">0</span>
+      </div>
+      <div class="kpi-icon-wrap red">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Grid: Row 1 (CPU & RAM Line Charts) -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            CPU Utilization Trend
+          </h3>
+          <span class="card-subtitle" id="cpuChartSubtitle">Real-time local machine telemetry (%)</span>
+        </div>
+        <span class="badge badge-real" id="cpuBadge">LOCAL HOST</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="dashboardCpuChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2"><path d="M2 8h20v8H2z"></path></svg>
+            Memory (RAM) Utilization Trend
+          </h3>
+          <span class="card-subtitle" id="ramChartSubtitle">Real-time memory consumption (%)</span>
+        </div>
+        <span class="badge badge-real" id="ramBadge">LIVE TELEMETRY</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="dashboardRamChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Grid: Row 2 (Disk Storage Info & Network Traffic Chart) -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+            Storage / Disk Partition Health
+          </h3>
+          <span class="card-subtitle">Primary system partition utilization</span>
+        </div>
+        <span class="badge badge-info" id="diskPercentBadge">--% Used</span>
+      </div>
+      <div class="disk-overview">
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary);">
+          <span>Partition Usage</span>
+          <strong id="diskUsageLabel">-- GB / -- GB</strong>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="diskProgressFill" style="width: 0%;"></div>
+        </div>
+        <div class="disk-stats-row">
+          <div class="stat-box">
+            <div class="title">Used Space</div>
+            <div class="val" id="diskUsedVal" style="color: var(--accent-yellow);">-- GB</div>
+          </div>
+          <div class="stat-box">
+            <div class="title">Free Space</div>
+            <div class="val" id="diskFreeVal" style="color: var(--accent-green);">-- GB</div>
+          </div>
+          <div class="stat-box">
+            <div class="title">Total Capacity</div>
+            <div class="val" id="diskTotalVal">-- GB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Network Traffic Activity
+          </h3>
+          <span class="card-subtitle">Throughput (KB/s Upload &amp; Download)</span>
+        </div>
+        <span class="badge badge-info" id="netRateBadge">0 KB/s</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="dashboardNetChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Alerts Section -->
+  <div class="table-card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          Recent Active Alerts
+        </h3>
+        <span class="card-subtitle">Resource threshold breaches requiring administrative attention</span>
+      </div>
+      <a href="{% url 'alerts' %}" class="btn btn-secondary btn-sm">View All Alerts</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Severity</th>
+            <th>Server</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Time</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="recentAlertsBody">
+          <tr>
+            <td colspan="7" class="empty-state">Loading active alerts...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Server Status Overview Section -->
+  <div class="table-card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+          Server Status Overview
+        </h3>
+        <span class="card-subtitle">Real-time health telemetry across all nodes in the infrastructure</span>
+      </div>
+      <a href="{% url 'servers' %}" class="btn btn-primary btn-sm">Manage Servers</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Server Name</th>
+            <th>Type</th>
+            <th>IP Address</th>
+            <th>OS</th>
+            <th>CPU Usage</th>
+            <th>RAM Usage</th>
+            <th>Disk Usage</th>
+            <th>Status</th>
+            <th>Last Heartbeat</th>
+          </tr>
+        </thead>
+        <tbody id="serverOverviewBody">
+          <tr>
+            <td colspan="9" class="empty-state">Loading cluster overview...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}

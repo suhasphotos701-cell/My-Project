@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Alerts – ServerPulse Health Monitor (Django){% endblock %}
+{% block page_title %}Alert Center & Incident Management{% endblock %}
+
+{% block content %}
+<!-- Thresholds Information Banner -->
+<div class="demo-banner">
+  <div class="demo-banner-content">
+    <span class="demo-badge" style="background-color: var(--accent-red);">Active Rules</span>
+    <span style="font-size: 0.85rem; color: var(--text-secondary);">
+      CPU > 80% (Warn) / 90% (Crit) | RAM > 85% (Warn) / 95% (Crit) | Disk > 90% (Crit) | Offline = Critical
+    </span>
+  </div>
+  <a href="{% url 'settings' %}" class="btn btn-secondary btn-sm">Configure Thresholds</a>
+</div>
+
+<!-- Alert Statistics Grid -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <span class="kpi-label">Active Incidents</span>
+      <span class="kpi-value" id="alertKpiActive" style="color: var(--accent-red);">0</span>
+    </div>
+    <div class="kpi-icon-wrap red">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <span class="kpi-label">Acknowledged</span>
+      <span class="kpi-value" id="alertKpiAck" style="color: var(--accent-yellow);">0</span>
+    </div>
+    <div class="kpi-icon-wrap amber">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <span class="kpi-label">Resolved History</span>
+      <span class="kpi-value" id="alertKpiResolved" style="color: var(--accent-green);">0</span>
+    </div>
+    <div class="kpi-icon-wrap green">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <span class="kpi-label">Critical Alerts</span>
+      <span class="kpi-value" id="alertKpiCritical" style="color: #f87171;">0</span>
+    </div>
+    <div class="kpi-icon-wrap red">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+    </div>
+  </div>
+</div>
+
+<!-- Controls Bar: Filter tabs & severity dropdown -->
+<div class="controls-bar">
+  <div class="tabs-group">
+    <button class="tab-btn active" onclick="setAlertStatusFilter('all', this)">All Alerts</button>
+    <button class="tab-btn" onclick="setAlertStatusFilter('active', this)">Active Only</button>
+    <button class="tab-btn" onclick="setAlertStatusFilter('acknowledged', this)">Acknowledged</button>
+    <button class="tab-btn" onclick="setAlertStatusFilter('resolved', this)">Resolved History</button>
+  </div>
+
+  <div style="display: flex; gap: 12px; align-items: center;">
+    <select id="alertSeveritySelect" class="form-control" style="width: 170px;" onchange="onSeverityChange()">
+      <option value="all">All Severities</option>
+      <option value="critical">Critical Only</option>
+      <option value="warning">Warning Only</option>
+    </select>
+  </div>
+</div>
+
+<!-- Alerts Table Card -->
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Severity</th>
+          <th>Alert Type</th>
+          <th>Monitored Server</th>
+          <th>Incident Description</th>
+          <th>Metric Reading</th>
+          <th>Timestamp</th>
+          <th>Status</th>
+          <th style="text-align: right;">Administrator Action</th>
+        </tr>
+      </thead>
+      <tbody id="alertsTableBody">
+        <tr>
+          <td colspan="8" class="empty-state">Loading alerts repository...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/alerts.js' %}"></script>
+{% endblock %}

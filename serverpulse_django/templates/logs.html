@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}System Logs – ServerPulse Health Monitor (Django){% endblock %}
+{% block page_title %}Audit &amp; System Telemetry Logs{% endblock %}
+
+{% block content %}
+<div class="controls-bar">
+  <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+    <div style="position: relative;">
+      <input type="text" id="logSearchInput" class="form-control" placeholder="Search events by description or server..." style="min-width: 280px; padding-left: 36px;">
+      <svg style="position: absolute; left: 12px; top: 12px; color: var(--text-muted);" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    </div>
+
+    <div class="tabs-group">
+      <button class="tab-btn active" onclick="filterLogs('all', this)">All Severities</button>
+      <button class="tab-btn" onclick="filterLogs('info', this)">Info</button>
+      <button class="tab-btn" onclick="filterLogs('warning', this)">Warning</button>
+      <button class="tab-btn" onclick="filterLogs('critical', this)">Critical</button>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 8px;">
+    <button class="btn btn-secondary btn-sm" onclick="fetchLogs()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+      Refresh Logs
+    </button>
+  </div>
+</div>
+
+<!-- Logs Table Card -->
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width: 170px;">Timestamp</th>
+          <th style="width: 110px;">Severity</th>
+          <th style="width: 180px;">Source / Node</th>
+          <th style="width: 180px;">Event Category</th>
+          <th>Event Description</th>
+        </tr>
+      </thead>
+      <tbody id="logsTableBody">
+        <tr>
+          <td colspan="5" class="empty-state">Loading audit logs...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let activeLogSeverity = 'all';
+  let logSearchQuery = '';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    fetchLogs();
+    setInterval(fetchLogs, 4000);
+
+    const input = document.getElementById('logSearchInput');
+    if (input) {
+      input.addEventListener('input', (e) => {
+        logSearchQuery = e.target.value.trim();
+        fetchLogs();
+      });
+    }
+  });
+
+  function filterLogs(sev, btn) {
+    activeLogSeverity = sev;
+    document.querySelectorAll('.tabs-group .tab-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    fetchLogs();
+  }
+
+  async function fetchLogs() {
+    try {
+      let url = `/api/logs?severity=${activeLogSeverity}&limit=120`;
+      if (logSearchQuery) {
+        url += `&search=${encodeURIComponent(logSearchQuery)}`;
+      }
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to load logs');
+      const logs = await res.json();
+      renderLogs(logs);
+    } catch (err) {
+      console.error('Error fetching logs:', err);
+    }
+  }
+
+  function renderLogs(logs) {
+    const tbody = document.getElementById('logsTableBody');
+    if (!tbody) return;
+
+    if (!logs || logs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No matching log records found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = logs.map(l => {
+      let badgeClass = 'badge-info';
+      if (l.severity === 'critical') badgeClass = 'badge-critical';
+      else if (l.severity === 'warning') badgeClass = 'badge-warning';
+
+      return `
+        <tr>
+          <td style="color: var(--text-muted); font-size: 0.8rem; font-family: monospace;">${l.timestamp}</td>
+          <td><span class="badge ${badgeClass}">${l.severity.toUpperCase()}</span></td>
+          <td><strong>${l.server_name || 'System'}</strong></td>
+          <td><code>${l.event_type}</code></td>
+          <td style="color: var(--text-primary); font-size: 0.88rem;">${l.description}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+</script>
+{% endblock %}

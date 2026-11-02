@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Settings – ServerPulse Health Monitor (Django){% endblock %}
+{% block page_title %}Monitoring &amp; Threshold Configuration{% endblock %}
+
+{% block content %}
+<div style="max-width: 860px;">
+  <!-- Settings Form Card -->
+  <div class="table-card" style="padding: 28px;">
+    <div class="card-header" style="margin-bottom: 24px;">
+      <div>
+        <h3 class="card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Alert Trigger Thresholds
+        </h3>
+        <span class="card-subtitle">Configure the critical and warning tolerance levels across monitored resources</span>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="resetToDefaults()">Reset Defaults</button>
+    </div>
+
+    <form id="settingsForm" onsubmit="saveSettings(event)">
+      <!-- CPU Section -->
+      <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 20px;">
+        <h4 style="font-size: 0.95rem; margin-bottom: 14px; color: var(--accent-cyan); display: flex; align-items: center; gap: 8px;">
+          Processor (CPU) Limits
+        </h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="cpuWarning">CPU Warning Threshold (%)</label>
+            <input type="number" id="cpuWarning" class="form-control" min="10" max="99" step="1" required>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Default: 80%. Triggers Warning severity.</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cpuCritical">CPU Critical Threshold (%)</label>
+            <input type="number" id="cpuCritical" class="form-control" min="15" max="100" step="1" required>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Default: 90%. Triggers Critical incident.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RAM Section -->
+      <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 20px;">
+        <h4 style="font-size: 0.95rem; margin-bottom: 14px; color: var(--accent-purple); display: flex; align-items: center; gap: 8px;">
+          Memory (RAM) Limits
+        </h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="ramWarning">RAM Warning Threshold (%)</label>
+            <input type="number" id="ramWarning" class="form-control" min="10" max="99" step="1" required>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Default: 85%. Triggers Warning severity.</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ramCritical">RAM Critical Threshold (%)</label>
+            <input type="number" id="ramCritical" class="form-control" min="15" max="100" step="1" required>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Default: 95%. Triggers Critical incident.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Disk Section -->
+      <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 20px;">
+        <h4 style="font-size: 0.95rem; margin-bottom: 14px; color: var(--accent-green); display: flex; align-items: center; gap: 8px;">
+          Storage (Disk) Limit
+        </h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="diskWarning">Disk Warning / Critical Threshold (%)</label>
+            <input type="number" id="diskWarning" class="form-control" min="10" max="100" step="1" required>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Default: 90%. Triggers Critical incident when storage capacity is exhausted.</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="pollingInterval">Telemetry Sampling Interval (Seconds)</label>
+            <input type="number" id="pollingInterval" class="form-control" min="2" max="10" step="1" required>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Default: 3s. Recommended range 2–5 seconds.</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="submit" class="btn btn-primary" style="padding: 10px 24px; font-size: 0.92rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          Save Monitoring Settings
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- University Demo Testing Tools -->
+  <div class="table-card" style="border-color: rgba(245, 158, 11, 0.3);">
+    <h3 class="card-title" style="margin-bottom: 8px; color: var(--accent-yellow);">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+      Live Presentation Demo Helpers
+    </h3>
+    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+      Use these quick actions to demonstrate alert generation and resolution during an industry-track presentation or oral exam:
+    </p>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      <button class="btn btn-warning" onclick="demoTestCpuWarn()">
+        Test CPU Warning (Set CPU Warn to 20%)
+      </button>
+      <button class="btn btn-danger" onclick="demoTestSpikeAll()">
+        Spike Simulated Server Load (95% CPU)
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    loadSettings();
+  });
+
+  async function loadSettings() {
+    try {
+      const res = await fetch('/api/settings');
+      if (!res.ok) throw new Error('Failed to load settings');
+      const data = await res.json();
+
+      document.getElementById('cpuWarning').value = data.cpu_warning;
+      document.getElementById('cpuCritical').value = data.cpu_critical;
+      document.getElementById('ramWarning').value = data.ram_warning;
+      document.getElementById('ramCritical').value = data.ram_critical;
+      document.getElementById('diskWarning').value = data.disk_warning;
+      document.getElementById('pollingInterval').value = data.polling_interval || 3;
+    } catch (err) {
+      showToast('Failed to load current settings.', 'danger');
+    }
+  }
+
+  async function saveSettings(e) {
+    e.preventDefault();
+    const cpu_warn = parseFloat(document.getElementById('cpuWarning').value);
+    const cpu_crit = parseFloat(document.getElementById('cpuCritical').value);
+    const ram_warn = parseFloat(document.getElementById('ramWarning').value);
+    const ram_crit = parseFloat(document.getElementById('ramCritical').value);
+    const disk_warn = parseFloat(document.getElementById('diskWarning').value);
+    const interval = parseInt(document.getElementById('pollingInterval').value);
+
+    if (cpu_warn >= cpu_crit) {
+      showToast('CPU Warning threshold must be strictly less than Critical threshold.', 'danger');
+      return;
+    }
+    if (ram_warn >= ram_crit) {
+      showToast('RAM Warning threshold must be strictly less than Critical threshold.', 'danger');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cpu_warning: cpu_warn,
+          cpu_critical: cpu_crit,
+          ram_warning: ram_warn,
+          ram_critical: ram_crit,
+          disk_warning: disk_warn,
+          polling_interval: interval
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+      } else {
+        showToast(data.error || 'Failed to save settings.', 'danger');
+      }
+    } catch (err) {
+      showToast('Network error while saving settings.', 'danger');
+    }
+  }
+
+  function resetToDefaults() {
+    document.getElementById('cpuWarning').value = 80;
+    document.getElementById('cpuCritical').value = 90;
+    document.getElementById('ramWarning').value = 85;
+    document.getElementById('ramCritical').value = 95;
+    document.getElementById('diskWarning').value = 90;
+    document.getElementById('pollingInterval').value = 3;
+    showToast('Form reset to default values. Click Save to persist.', 'info');
+  }
+
+  async function demoTestCpuWarn() {
+    document.getElementById('cpuWarning').value = 20;
+    document.getElementById('cpuCritical').value = 85;
+    document.getElementById('settingsForm').dispatchEvent(new Event('submit'));
+    showToast('CPU Warning threshold lowered to 20%! A warning will trigger on active servers.', 'warning');
+  }
+
+  async function demoTestSpikeAll() {
+    try {
+      const res = await fetch('/api/servers');
+      const servers = await res.json();
+      const sim = servers.find(s => s.is_local == 0) || servers[0];
+      if (sim) {
+        await fetch(`/api/servers/${sim.id}/spike`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cpu: 96.0, ram: 92.0, cycles: 8 })
+        });
+        showToast(`Triggered 96% CPU spike on '${sim.name}'! Check Overview or Alerts.`, 'warning');
+      }
+    } catch (e) {
+      showToast('Failed to trigger demo spike.', 'danger');
+    }
+  }
+</script>
+{% endblock %}

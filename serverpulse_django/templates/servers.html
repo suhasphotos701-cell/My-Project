@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Servers – ServerPulse Health Monitor (Django){% endblock %}
+{% block page_title %}Server Fleet Management{% endblock %}
+
+{% block content %}
+<div class="controls-bar">
+  <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+    <div style="position: relative;">
+      <input type="text" id="serverSearchInput" class="form-control" placeholder="Search servers by name, IP, or OS..." style="min-width: 280px; padding-left: 36px;">
+      <svg style="position: absolute; left: 12px; top: 12px; color: var(--text-muted);" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    </div>
+
+    <div class="tabs-group">
+      <button class="tab-btn active" onclick="filterServers('all', this)">All Nodes</button>
+      <button class="tab-btn" onclick="filterServers('online', this)">Online Only</button>
+      <button class="tab-btn" onclick="filterServers('offline', this)">Offline Only</button>
+      <button class="tab-btn" onclick="filterServers('real', this)">Real Host</button>
+      <button class="tab-btn" onclick="filterServers('simulated', this)">Simulated</button>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="openAddServerModal()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    Add Server Node
+  </button>
+</div>
+
+<!-- Servers Table Card -->
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Server Node</th>
+          <th>Type</th>
+          <th>IP / Hostname</th>
+          <th>OS Environment</th>
+          <th>CPU Load</th>
+          <th>RAM Load</th>
+          <th>Disk Load</th>
+          <th>Status</th>
+          <th>Last Heartbeat</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="serversTableBody">
+        <tr>
+          <td colspan="10" class="empty-state">Loading server infrastructure...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Server Modal -->
+<div class="modal-overlay" id="addServerModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title">Register New Server Node</h3>
+      <button class="modal-close" onclick="closeAddServerModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="addServerForm" onsubmit="handleAddServer(event)">
+        <div class="form-group">
+          <label class="form-label" for="addServerName">Server Name *</label>
+          <input type="text" id="addServerName" class="form-control" placeholder="e.g. EU-West-Cache-01" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addServerIp">IP Address *</label>
+            <input type="text" id="addServerIp" class="form-control" placeholder="192.168.1.110" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addServerHost">Hostname</label>
+            <input type="text" id="addServerHost" class="form-control" placeholder="cache01.serverpulse.internal">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addServerOs">Operating System</label>
+            <input type="text" id="addServerOs" class="form-control" value="Linux Ubuntu 22.04 LTS">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addServerProfile">Workload Profile</label>
+            <select id="addServerProfile" class="form-control">
+              <option value="web_server">Web / Microservice</option>
+              <option value="database">Database (Higher RAM)</option>
+              <option value="storage">Storage Node (High Disk)</option>
+              <option value="balanced">Balanced Compute</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addServerCores">CPU Cores</label>
+            <input type="number" id="addServerCores" class="form-control" value="8" min="1" max="128">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addServerRam">RAM (GB)</label>
+            <input type="number" id="addServerRam" class="form-control" value="32" min="1" max="1024">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addServerDisk">Disk (GB)</label>
+            <input type="number" id="addServerDisk" class="form-control" value="500" min="10" max="10000">
+          </div>
+        </div>
+
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">
+          Note: Monitored remotely with simulated high-resolution telemetry. Real local machine metrics are monitored on the primary host.
+        </div>
+
+        <div class="modal-footer" style="margin-top: 20px; margin-left: -24px; margin-right: -24px; margin-bottom: -24px;">
+          <button type="button" class="btn btn-secondary" onclick="closeAddServerModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Server</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Server Details Modal -->
+<div class="modal-overlay" id="serverDetailsModal">
+  <div class="modal-box" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="detailsServerTitle">Server Details</h3>
+      <button class="modal-close" onclick="closeServerDetailsModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="detailsModalContent">
+      Loading server specifications...
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeServerDetailsModal()">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/servers.js' %}"></script>
+{% endblock %}
